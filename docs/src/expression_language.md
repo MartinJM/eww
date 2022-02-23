@@ -36,4 +36,5 @@ Supported currently are the following features:
 	- `captures(string, regex)`: Get the captures of a given regex in a string (returns array)
 	- `hex_decode(string)`: Hex decodes the string
 	- `length(value)`: Gets the length of the value, as string length, json array length, or json object length
+	- `with(name, value, expression)`: Evaluate the simple expression (which must be a string), where the variable `name` has value `value`
 

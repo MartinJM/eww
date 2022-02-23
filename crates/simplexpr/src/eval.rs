@@ -1,3 +1,4 @@
+use crate::parse_string;
 use itertools::Itertools;
 
 use crate::{
@@ -30,6 +31,9 @@ pub enum EvalError {
 
     #[error("Cannot hex decode {0}")]
     CannotHexDecode(String),
+
+    #[error("Invalid expression for with: {0}")]
+    InvalidWithExpression(String),
 
     #[error("Unable to index into value {0}")]
     CannotIndex(String),
@@ -342,6 +346,17 @@ fn call_expr_function(name: &str, args: Vec<DynVal>) -> Result<DynVal, EvalError
                 },
                 Err(_) => Err(EvalError::CannotHexDecode(hexstring.to_string())),
             },
+            _ => Err(EvalError::WrongArgCount(name.to_string())),
+        },
+        "with" => match args.as_slice() {
+            [varname, value, function] => {
+                let mut valuemap = HashMap::new();
+                valuemap.insert(VarName(varname.to_string()), value.clone());
+                match parse_string(0, 0, &function.as_string()?) {
+                    Ok(p) => p.eval(&valuemap),
+                    Err(_) => Err(EvalError::InvalidWithExpression(function.as_string()?)),
+                }
+            }
             _ => Err(EvalError::WrongArgCount(name.to_string())),
         },
         "length" => match args.as_slice() {
