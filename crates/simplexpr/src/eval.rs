@@ -26,14 +26,17 @@ pub enum EvalError {
     #[error("Incorrect number of arguments given to function: {0}")]
     WrongArgCount(String),
 
+    #[error("Argument for function {0} has to be {1}, but it is not")]
+    WrongArgType(String, String),
+
     #[error("Unknown function {0}")]
     UnknownFunction(String),
 
     #[error("Cannot hex decode {0}")]
     CannotHexDecode(String),
 
-    #[error("Invalid expression for with: {0}")]
-    InvalidWithExpression(String),
+    #[error("Invalid sub-expression: {0}")]
+    InvalidSubExpression(String),
 
     #[error("Unable to index into value {0}")]
     CannotIndex(String),
@@ -354,7 +357,7 @@ fn call_expr_function(name: &str, args: Vec<DynVal>) -> Result<DynVal, EvalError
                 valuemap.insert(VarName(varname.to_string()), value.clone());
                 match parse_string(0, 0, &function.as_string()?) {
                     Ok(p) => p.eval(&valuemap),
-                    Err(_) => Err(EvalError::InvalidWithExpression(function.as_string()?)),
+                    Err(_) => Err(EvalError::InvalidSubExpression(function.as_string()?)),
                 }
             }
             _ => Err(EvalError::WrongArgCount(name.to_string())),
@@ -366,6 +369,63 @@ fn call_expr_function(name: &str, args: Vec<DynVal>) -> Result<DynVal, EvalError
                     Ok(Some(map)) => Ok(DynVal::from(map.len() as i32)),
                     _ => Ok(DynVal::from(string.as_string()?.len() as i32)),
                 },
+            },
+            _ => Err(EvalError::WrongArgCount(name.to_string())),
+        },
+        "map" => match args.as_slice() {
+            [object, function] => match parse_string(0, 0, &function.as_string()?) {
+                Ok(p) => match object.as_json_value().as_ref().map(|x| x.as_array()) {
+                    Ok(Some(vec)) => {
+                        let mut retval = String::new();
+                        retval.push('[');
+                        for element in vec {
+                            let mut valuemap = HashMap::new();
+                            valuemap.insert(VarName("element".to_string()), DynVal::from(element));
+                            match p.eval(&valuemap) {
+                                Ok(val) => {
+                                    retval.push('"');
+                                    retval.push_str(&val.as_string()?);
+                                    retval.push('"');
+                                }
+                                Err(_) => return Err(EvalError::InvalidSubExpression(function.as_string()?)),
+                            }
+                            retval.push_str(", ");
+                        }
+                        if vec.len() != 0 {
+                            retval.pop();
+                            retval.pop();
+                        }
+                        retval.push(']');
+                        Ok(DynVal::from(retval))
+                    }
+                    _ => match object.as_json_value().as_ref().map(|x| x.as_object()) {
+                        Ok(Some(map)) => {
+                            let mut retval = String::new();
+                            retval.push('[');
+                            for (_, element) in map {
+                                let mut valuemap = HashMap::new();
+                                valuemap.insert(VarName("element".to_string()), DynVal::from(element));
+                                match p.eval(&valuemap) {
+                                    Ok(val) => {
+                                        retval.push('"');
+                                        retval.push_str(&val.as_string()?);
+                                        retval.push('"');
+                                    }
+                                    Err(_) => return Err(EvalError::InvalidSubExpression(function.as_string()?)),
+                                }
+                                retval.push_str(", ");
+                            }
+                            if map.len() != 0 {
+                                retval.pop();
+                                retval.pop();
+                            }
+                            retval.push(']');
+                            Ok(DynVal::from(retval))
+                        }
+                        _ => Err(EvalError::WrongArgType(name.to_string(), "json".to_string())),
+                    },
+                },
+                Err(_) => Err(EvalError::InvalidSubExpression(function.as_string()?)),
             },
             _ => Err(EvalError::WrongArgCount(name.to_string())),
         },

@@ -15,7 +15,7 @@ All notable changes to eww will be listed here, starting at changes since versio
 - Add circular progress widget (By: druskus20)
 - Add `search`, `captures`, and `hex_decode` functions for expressions (By: MartinJM)
 - Add `length` function for expressions (By: viandoxdev & MartinJM)
-- Add `with` function for expressions (By: MartinJM)
+- Add `with`, and `map` functions for expressions (By: MartinJM)
 
 ### Notable Internal changes
 - Rework state management completely, now making local state and dynamic widget hierarchy changes possible.
