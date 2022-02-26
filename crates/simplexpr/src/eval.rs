@@ -429,6 +429,36 @@ fn call_expr_function(name: &str, args: Vec<DynVal>) -> Result<DynVal, EvalError
             },
             _ => Err(EvalError::WrongArgCount(name.to_string())),
         },
+        "join" => match args.as_slice() {
+            [object, separator] => match object.as_json_value().as_ref().map(|x| x.as_array()) {
+                Ok(Some(vec)) => Ok(DynVal::from(
+                    vec.iter()
+                        .map(|x| {
+                            if x.is_string() {
+                                x.to_string().get(1..x.to_string().len() - 1).unwrap().to_string()
+                            } else {
+                                x.to_string()
+                            }
+                        })
+                        .join(&separator.as_string()?),
+                )),
+                _ => match object.as_json_value().as_ref().map(|x| x.as_object()) {
+                    Ok(Some(map)) => Ok(DynVal::from(
+                        map.iter()
+                            .map(|(_, x)| {
+                                if x.is_string() {
+                                    x.to_string().get(1..x.to_string().len() - 1).unwrap().to_string()
+                                } else {
+                                    x.to_string()
+                                }
+                            })
+                            .join(&separator.as_string()?),
+                    )),
+                    _ => Ok(object.clone()),
+                },
+            },
+            _ => Err(EvalError::WrongArgCount(name.to_string())),
+        },
         _ => Err(EvalError::UnknownFunction(name.to_string())),
     }
 }

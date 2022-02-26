@@ -38,4 +38,5 @@ Supported currently are the following features:
 	- `length(value)`: Gets the length of the value, as string length, json array length, or json object length
 	- `with(name, value, expression)`: Evaluate the simple expression (which must be a string), where the variable `name` has value `value`
 	- `map(json_object, expression)`: Evaluate the simple expression (which must be a string), on each element in the json object, where the element can be accessed using the vairable `element` (returns array)
+	- `join(string, separator)`: Joins json objects and arrays with the separator, returns the `string` unchanged if it's not a json object or array
 
